@@ -1,0 +1,112 @@
+{
+  "name": "Patient Registration Agent",
+  "firstMessage": "Hi, thanks for calling. I can register you as a new patient or update an existing record. What phone number should I use to look up your patient record?",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.4,
+    "messages": [
+      {
+        "role": "system",
+        "content": "SEE vapi/system_prompt.md — paste the fenced prompt block from that file here when creating the assistant in the Vapi dashboard, or load it programmatically (see scripts/create_vapi_assistant.py)."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "lookup_patient_by_phone",
+          "description": "Look up an existing patient record by phone number, used as soon as the caller's phone number is collected to detect returning callers.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone_number": {
+                "type": "string",
+                "description": "10-digit US phone number, digits only or with normal formatting."
+              }
+            },
+            "required": ["phone_number"]
+          }
+        },
+        "server": { "url": "REPLACE_WITH_YOUR_DEPLOYED_URL/vapi/webhook" }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_patient",
+          "description": "Create a new patient record once all required fields have been collected and confirmed back to the caller.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "first_name": { "type": "string" },
+              "last_name": { "type": "string" },
+              "date_of_birth": { "type": "string", "description": "YYYY-MM-DD" },
+              "sex": { "type": "string", "enum": ["Male", "Female", "Other", "Decline to Answer"] },
+              "phone_number": { "type": "string", "description": "10 digit US phone number" },
+              "email": { "type": "string" },
+              "address_line_1": { "type": "string" },
+              "address_line_2": { "type": "string" },
+              "city": { "type": "string" },
+              "state": { "type": "string", "description": "2-letter US state abbreviation" },
+              "zip_code": { "type": "string" },
+              "insurance_provider": { "type": "string" },
+              "insurance_member_id": { "type": "string" },
+              "preferred_language": { "type": "string" },
+              "emergency_contact_name": { "type": "string" },
+              "emergency_contact_phone": { "type": "string" }
+            },
+            "required": [
+              "first_name", "last_name", "date_of_birth", "sex", "phone_number",
+              "address_line_1", "city", "state", "zip_code"
+            ]
+          }
+        },
+        "server": { "url": "REPLACE_WITH_YOUR_DEPLOYED_URL/vapi/webhook" }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "update_patient",
+          "description": "Update an existing patient record (used when a returning caller, identified via lookup_patient_by_phone, opts to update their info instead of creating a duplicate).",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "patient_id": { "type": "string", "description": "The existing patient's UUID, from lookup_patient_by_phone." },
+              "first_name": { "type": "string" },
+              "last_name": { "type": "string" },
+              "date_of_birth": { "type": "string" },
+              "sex": { "type": "string" },
+              "phone_number": { "type": "string" },
+              "email": { "type": "string" },
+              "address_line_1": { "type": "string" },
+              "address_line_2": { "type": "string" },
+              "city": { "type": "string" },
+              "state": { "type": "string" },
+              "zip_code": { "type": "string" },
+              "insurance_provider": { "type": "string" },
+              "insurance_member_id": { "type": "string" },
+              "preferred_language": { "type": "string" },
+              "emergency_contact_name": { "type": "string" },
+              "emergency_contact_phone": { "type": "string" }
+            },
+            "required": ["patient_id"]
+          }
+        },
+        "server": { "url": "REPLACE_WITH_YOUR_DEPLOYED_URL/vapi/webhook" }
+      }
+    ]
+  },
+  "voice": {
+    "provider": "vapi",
+    "voiceId": "Elliot"
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-2",
+    "language": "en-US"
+  },
+  "endCallFunctionEnabled": true,
+  "endCallMessage": "Thanks so much, take care!",
+  "silenceTimeoutSeconds": 20,
+  "maxDurationSeconds": 600
+}
